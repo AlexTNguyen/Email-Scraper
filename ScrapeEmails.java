@@ -1,8 +1,8 @@
 /*
  ScrapeEmails.java
 
- A command-program that takes in a domain and prints out all the email addresses found on any of 
- the discoverable pages of the domain.
+ A command-line program that takes in a domain and prints out all the email addresses found on 
+ any of the discoverable pages of the domain.
 
  */
 
@@ -27,10 +27,10 @@ public class ScrapeEmails {
     public static void main(String[] args) {
         if(args.length == 1) { 
             ScrapeEmails scraper = new ScrapeEmails(args[0]); 
-            scraper.findEmails();
+            scraper.findURLs();
         }
         else System.out.println("Please enter a domain!");
-        System.out.println("Scraping Complete");
+        System.out.println("Program Complete");
     }
 
     public ScrapeEmails (String domain) {
@@ -43,19 +43,23 @@ public class ScrapeEmails {
     }
 
     // Method used to parse each page in the links stack for additional links and email addresses. 
-    private void findEmails() { 
-        try {
-            // While stack of links to parse is not empty ...
-            if (!linksToScrape.empty()) { 
-                String url = linksToScrape.pop(); 
+    private void findURLs() { 
+        // While stack of links to parse is not empty ...
+        if (!linksToScrape.empty()) { 
+            String url = linksToScrape.pop(); 
+            try {
                 doc = Jsoup.connect(url).ignoreHttpErrors(true).get();
-                Elements pageLinks = doc.select("a[href]");
-                // For all the links found on the current page...
-                for(Element link: pageLinks) {
-                    String newUrl = formatURL(link.attr("href"));
-                    // If the link is a discoverable page of the domain given and hasn't been 
-                    // parsed before ...
-                    if(correctLink(newUrl) && !linkSet.contains(newUrl)) {
+            } catch (IOException e) {
+                e.printStackTrace();
+            }  
+            Elements pageLinks = doc.select("a[href]");
+            // For all the links found on the current page...
+            for(Element link: pageLinks) {
+                String newUrl = formatURL(link.attr("href"));
+                // If the link is a discoverable page of the domain given and hasn't been 
+                // parsed before ...
+                if(correctLink(newUrl) && !linkSet.contains(newUrl)) {
+                    try { 
                         Connection.Response res = Jsoup.connect(newUrl)
                                                        .ignoreHttpErrors(true)
                                                        .ignoreContentType(true)
@@ -66,26 +70,31 @@ public class ScrapeEmails {
                             linkSet.add(newUrl);
                             linksToScrape.push(newUrl); 
                         }
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }     
                 }
-                // RegEx used to find email addresses.
-                String regex = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@" + 
-                               "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
-                Elements emails = doc.select(":matches(" + regex + ")");
-                // For all the email address founded on the current page...
-                for(Element email : emails) {
-                    // If this email has not been printed before then print it. 
-                    if(!emailSet.contains(email.text())) {
-                        if(emailSet.isEmpty()) System.out.println("Found these email addresses: ");
-                        emailSet.add(email.text());
-                        System.out.println(email.text());
-                    }
-                }
-                findEmails();
-            } 
-        } catch (IOException e) {
-            e.printStackTrace();
-        }  
+            }
+            findEmails(doc);
+            findURLs();
+        }
+    }
+    
+    // Method used to find all the emails in a given page. 
+    private void findEmails(Document doc) {
+        // RegEx used to find email addresses.
+        String regex = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@" + 
+                       "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
+        Elements emails = doc.select(":matches(" + regex + ")");
+        // For all the email address founded on the current page...
+        for(Element email : emails) {
+            // If this email has not been printed before then print it. 
+            if(!emailSet.contains(email.text())) {
+                if(emailSet.isEmpty()) System.out.println("Found these email addresses: ");
+                emailSet.add(email.text());
+                System.out.println(email.text());
+            }
+        }
     }
 
     // Helper function used to determine if a given link is a discoverable page of the domain 
