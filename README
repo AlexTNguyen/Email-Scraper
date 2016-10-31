@@ -1,1 +1,30 @@
-See Development Branch
+ScrapeEmails.java - README
+Alex Nguyen
+
+DESCRIPTION
+-----------------------------
+A command-line program that takes in a domain and prints out all the email addresses found on 
+any of the discoverable pages of the domain.
+ 
+HOW IT WORKS
+-----------------------------
+It utilizes the Jsoup library to parse the html of the URLs given to it. 
+The library uses RegEx to find the links and email addresses found on a page. 
+The user provides a domain, which is added to a stack of URLs to be searched. 
+Every page found on the stack will first be parsed for links to also be added onto the stack.
+Every page on the stack will also be parsed for email addresses, which are printed. 
+When the stack is empty, the process is complete. 
+
+HOW TO SETUP/RUN
+-----------------------------
+Add the jsoup-1.9.2.jar file to the classpath when compiling:
+	On Linux: 
+		javac -cp .:jsoup-1.9.2.jar ScrapeEmails.java
+		java -cp .:jsoup-1.9.2.jar ScrapeEmails [domain name]
+
+Alternatively, if you're using an IDE, you can add the .jar file to your External Jars.
+
+NOTES
+-----------------------------
+The program currently throws an error when it finds a link that is infinitely redirected.
+
